@@ -37,10 +37,11 @@ RUN set -eux; \
 	rm -rf $KDB_HOME && mkdir -p $KDB_HOME/data; \
     arch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
 	filename=kdb_"$arch"_linux_8.7.3.zip; \
-	wget --progress=dot:giga -r -np -nd -nH -O ES.zip "https://gitee.com/wephoon/DockerImages/raw/master/kingbase/packages/$filename"; \
+	wget --progress=dot:giga -r -np -nd -nH -O ES.zip "https://raw.githubusercontent.com/elic-chan/DockerImages/main/kingbase/packages/$filename"; \
 	unzip ES.zip -d $KDB_HOME; \
 	rm -rf ES.zip; \
-	cp $KDB_HOME/ES/Server/bin/{sys_ctl,sys_restore,sys_dump,ksql,initdb} /usr/local/bin/ ; \
+	/bin/cp -r $KDB_HOME/ES/Server/bin /usr/local/bin/kdb ; \
+	chmod +x /usr/local/bin/kdb/* ; \
 	find "$KDB_HOME/ES/Server/lib" -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-kingbase.conf; \
 	/sbin/ldconfig; \
 	chown -Rf kingbase:kingbase $KDB_HOME; \
@@ -49,7 +50,7 @@ RUN set -eux; \
 VOLUME [ "$KDB_HOME/data" ]
 
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x usr/local/bin/docker-entrypoint.sh && ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 
 EXPOSE 54321
