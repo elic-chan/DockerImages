@@ -2,7 +2,7 @@ FROM debian:bullseye-slim
 
 LABEL maintainer="wephoon<wephoon@outlook.com>"
 
-RUN groupadd -r kingbase && useradd -r -g kingbase kingbase
+RUN groupadd -r -g 501 kingbase && useradd -r -u 501 -g kingbase kingbase
 
 RUN set -eux; \
 	cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime; \
@@ -32,28 +32,28 @@ RUN set -eux; \
 	gosu nobody true
 
 ENV DBVERSION=V008R003C002B0320
-ENV KDB_HOME=/opt/kingbase 
+ENV PATH=/usr/local/kingbase/Server/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN set -eux; \
-	rm -rf $KDB_HOME && mkdir -p $KDB_HOME/data; \
+	rm -rf /usr/local/kingbase && mkdir -p /usr/local/kingbase; \
+	chown -R kingbase:kingbase /usr/local/kingbase; \
     arch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
-	filename=kdb_"$arch"_linux_8.7.3.zip; \
-	wget --progress=dot:giga -r -np -nd -nH -O ES.zip "https://raw.githubusercontent.com/elic-chan/DockerImages/main/kingbase/packages/$filename"; \
-	unzip ES.zip -d $KDB_HOME; \
+	filename=kdb_"$arch"_linux_8.7.3.tar.gz; \
+	wget --progress=dot:giga -r -np -nd -nH -O kingbase.tgz "https://raw.githubusercontent.com/elic-chan/DockerImages/main/kingbase/packages/$filename"; \
+	tar --extract --file kingbase.tgz --directory /usr/local/kingbase --strip-components 1 --no-same-owner ; \
 	rm -rf ES.zip; \
-	/bin/cp -r $KDB_HOME/ES/Server/bin /usr/local/bin/kdb ; \
-	chmod +x /usr/local/bin/kdb/* ; \
-	find "$KDB_HOME/ES/Server/lib" -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-kingbase.conf; \
+	find /usr/local/kingbase/Server/lib -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-kingbase.conf; \
 	/sbin/ldconfig; \
-	chown -Rf kingbase:kingbase $KDB_HOME; \
-	chmod 1777 $KDB_HOME/data; 
+	rm -rf /var/lib/kingbase && mkdir -p /var/lib/kingbase; \
+	chown -R kingbase:kingbase /var/lib/kingbase; \
+	chmod 1777 /var/lib/kingbase; 
 
-VOLUME [ "$KDB_HOME/data" ]
+VOLUME /var/lib/kingbase
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x usr/local/bin/docker-entrypoint.sh && ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 
 EXPOSE 54321
-CMD ["sys_ctl", "-D", "$KDB_HOME/data", "-l", "$KDB_HOME/data/kdb.log", "start"]
+CMD ["sys_ctl", "-D", "/var/lib/kingbase", "-l", "logfile", "start"]
 
 

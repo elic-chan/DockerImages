@@ -36,7 +36,7 @@ _is_sourced() {
 docker_check_database(){
 	declare -g DATABASE_ALREADY_EXISTS
 	if [ -d "$@/base" ];then
-		# kdb_note "检测到数据库实例已存在，跳过数据库初始化。"
+		kdb_note "检测到数据库实例已存在，跳过数据库初始化。"
 		DATABASE_ALREADY_EXISTS='true'
 	fi
 }
@@ -56,11 +56,12 @@ docker_init_db(){
 		kdb_warn "数据库字符集被指定为：UTF8"
 	fi
 	if [ -z "$KDB_CASE_SENSITIVITY" ]; then
-		KDB_CASE_SENSITIVITY="--case-insitive"
+		KDB_CASE_SENSITIVITY="--case-insensitive"
 		kdb_warn "数据库字符被指定为：大小写不敏感"
 	fi
-	kdb_note "初始化数据库。"
-	initdb -U ${KDB_ROOT_USER} --password ${KDB_ROOT_PASSWORD} --encoding=${KDB_ENCODING} ${KDB_CASE_SENSITIVITY} ${DATA_DIR}
+	initdb -U ${KDB_ROOT_USER} -W ${KDB_ROOT_PASSWORD} -E ${KDB_ENCODING} ${KDB_CASE_SENSITIVITY} -D /var/lib/kingbase
+	# ${KDB_HOME}/ES/Server/bin/initdb --encoding=${KDB_ENCODING} -D ${KDB_DATA_DIR}
+	# initdb --encoding=${KDB_ENCODING} -D /var/lib/kingbase
 	kdb_note "数据库初始化已完成。"
 }
 
